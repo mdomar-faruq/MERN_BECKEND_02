@@ -21,12 +21,13 @@ mongoose.connect("mongodb://localhost:27017/MERN_02") // Removed deprecated opti
 
 app.post('/addfriend', async (req, res) => {
 
+  const name = req.body.name;
+  const age = req.body.age;
+  if (!name || !age) {
+    return res.status(400).json({ message: "Missing fields!" });
+  }
+
   try {
-    const name = req.body.name;
-    const age = req.body.age;
-    if (!name || !age) {
-      return res.status(400).json({ message: "Missing fields!" });
-    }
     const friend = new FriendModel({ name: name, age: age });
     await friend.save();
     res.send("Inserted Data");
@@ -44,6 +45,21 @@ app.get('/read', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Internal Server Error"); // Or better: res.status(500).json({ error: "Failed to read data" });
+  }
+});
+
+app.put('/update', async (req, res) => {
+
+  const newAge = req.body.newAge;
+  const id = req.body.id;
+  try {
+   await FriendModel.findById(id,(error,friendToUpdate)=>{
+    friendToUpdate.age=Number(newAge);
+    friendToUpdate.save();
+   });
+  } catch (error) {
+    console.error("Error inserting data:", error);
+    res.status(500).send("Error inserting data"); // Send an appropriate error response
   }
 });
 
