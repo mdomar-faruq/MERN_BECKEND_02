@@ -18,19 +18,20 @@ mongoose.connect("mongodb://localhost:27017/MERN_02") // Removed deprecated opti
     // Handle the error appropriately (e.g., exit the application, retry the connection)
   });
 
+  app.get('/', async (req, res) => {
+      res.send('Start Node Server');
+  });
 
 app.post('/addfriend', async (req, res) => {
-
   const name = req.body.name;
   const age = req.body.age;
   if (!name || !age) {
     return res.status(400).json({ message: "Missing fields!" });
   }
-
   try {
     const friend = new FriendModel({ name: name, age: age });
     await friend.save();
-    res.send("Inserted Data");
+    res.send(friend);
   } catch (error) {
     console.error("Error inserting data:", error);
     res.status(500).send("Error inserting data"); // Send an appropriate error response
@@ -49,17 +50,46 @@ app.get('/read', async (req, res) => {
 });
 
 app.put('/update', async (req, res) => {
-
-  const newAge = req.body.newAge;
-  const id = req.body.id;
   try {
-   await FriendModel.findById(id,(error,friendToUpdate)=>{
-    friendToUpdate.age=Number(newAge);
-    friendToUpdate.save();
-   });
+    const newAge = req.body.newAge;
+    const id = req.body.id;
+    if (!newAge || !id) {
+      res.status(400).send("Invalid data");
+      return;
+    }
+    const friend = await FriendModel.findById(id);
+    if (!friend) {
+      res.status(404).send("Friend not found");
+      return;
+    }
+    friend.age = Number(newAge);
+    await friend.save();
+    res.send(friend); // Properly send the updated object
   } catch (error) {
-    console.error("Error inserting data:", error);
-    res.status(500).send("Error inserting data"); // Send an appropriate error response
+    console.error("Error:", error);
+    res.status(500).send("Internal server error");
+  }
+});
+
+app.delete("/delete/:id", async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    // Validate the ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).send("Invalid ID format");
+    }
+
+    // Delete the document
+    const deletedFriend = await FriendModel.findByIdAndDelete(id);
+    if (!deletedFriend) {
+      return res.status(404).send("Item not found"); // Handle case where the ID doesn't exist
+    }
+
+    res.send("Item deleted successfully");
+  } catch (error) {
+    console.error("Error deleting item:", error);
+    res.status(500).send("Internal server error");
   }
 });
 
